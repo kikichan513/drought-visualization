@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+<style>
+
+html, body {
+  font-family: Courier, Helvetica, sans-serif;
+  background-color:   #fffdf4;
+}
+
+h1 {
+  padding-left: 40px;
+  margin-bottom: -10px;
+  padding-bottom: 20px;
+}
+
+h2 {
+  padding: 15px;
+  margin-bottom: -10px;
+  margin-left: 30px;
+  font-size: 15px;
+  border-width: 1px;
+  background-color: #fcbc6c;
+  width: 88%;
+}
+
+#information {  
+  margin-left:40px;
+  margin-bottom: -10px;
+  padding-top: 20px;
+  font-family: Courier, Helvetica, sans-serif;
+}
+
+#header {
+  border-bottom: 1px solid black;
+  padding-bottom: 15px;
+  margin-left:40px;
+  width: 90%;
+}
+
+#legend {
+  margin-top: -20px;
+  margin-right: 6%;
+   text-align: right;
+   float: right;
+  display: inline-block;
+}
+.counties {
+  fill: none;
+}
+
+ul {
+  list-style-type: none;
+}
+#list1 {
+  margin: 5px;
+  border: 5px rgb(244,243,222) solid;
+  width: 20px;
+  height: 2px;
+}
+
+#list2 {
+  margin: 5px;
+  border: 5px rgb(255,180,0) solid;
+  width: 20px;
+    height: 2px;
+}
+
+#list3 {
+  margin: 5px;
+  border: 5px rgb(255,206,0)  solid;
+  width: 20px;
+    height: 2px;
+}
+
+#list4 {
+  margin: 5px;
+  border: 5px rgb(255,0,0) solid;
+  width: 20px;
+    height: 2px;
+}
+
+#list5 {
+  margin: 5px;
+  border: 5px rgb(197,0,0) solid;
+  width: 20px;
+    height: 2px;
+}
+
+#list6 {
+  margin: 5px;
+  border: 5px rgb(146,0,0) solid;
+  width: 20px;
+    height: 2px;
+}
+#kinds {
+  margin-top: -120px;
+  margin-right: 88%;
+  text-align: right;
+  float: right;
+  display: inline-block;
+}
+.states {
+  fill: none;
+  stroke: #fff;
+  stroke-linejoin: round;
+}
+/*0, 4,5, 6,7,8*/
+.q0-9 { fill:rgb(244,243,222); } 
+.q1-9 { fill:rgb(255,180,0) } 
+.q2-9 { fill:rgb(255,206,0) }
+.q3-9 { fill:rgb(255,0,0); } 
+.q4-9 { fill:rgb(197,0,0); } 
+.q5-9 { fill:rgb(146,0,0); } 
+
+</style>
+<h1></h1>
+<h2></h2></br></br>
+  <div id = "header"> Intensity and Impact </div>
+
+<div id = "information">
+
+  County:
+  <text id = "info" font-size=14px x="30" y="30" fill="#6e9ca7" font-family=
+  "Courier"></text></br>
+  Intensity: 
+  <text id = "intensity" font-size=14px x="30" y="30" fill="#6e9ca7" font-family=
+  "Courier"></text>
+
+  <div id = "legend" font-family=
+"Courier"> 
+    Nothing </br>
+    D0  = (Abnormally Dry) </br>
+    D1  = (Moderate Drought)</br>
+    D2  = (Severe Drought)</br>
+    D3  = (Extreme Drought)</br>
+    D4  = (Exceptional Drought)</br>
+</div>
+</div>
+</br>
+<svg width="960" height="600"></svg>
+<script src="js/d3.v4.min.js"></script>
+<script src="js/topojson.v1.min.js"></script>
+<div id = "header"> Legend  </div>
+  <div id = "footer" font-family=
+"Courier"> 
+<div id = "container">
+  <div id="icons">
+    <ul>
+      <li id="list1"></li>
+      <li id="list2"></li>
+      <li id="list3"></li>
+      <li id="list4"></li>
+      <li id="list5"></li>
+      <li id="list6"></li>
+    </ul>
+  </div>
+  <div id="kinds">
+    -  </br>
+    D0  </br>
+    D1  </br>
+    D2  </br>
+    D3  </br>
+    D4  </br>
+  </div>
+</div>
+</div>
+
+<script>
+
+var title = d3.select("h1")
+    .text("Drought by County");
+
+var subtitle = d3.select("h2")
+    .text("The U.S. Drought Monitor is a map showing parts of the U.S. that are in drought. Drought is a normal part of the climate cycle, losses from drought are as substantial as those from hurricanes. The map uses five classifications outlined below, and is a weekly assessment of drought conditions, based on how much precipitation did or didn’t fall. It also incorporates information about how drought is affecting people, via a network of state climatologists, National Weather Service staff, Extension agents, and hydrologists. ");
+
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+var rateById = d3.map();
+var county_names = d3.map();
+var county_states = d3.map();
+var intensities = d3.map();
+
+var quantize = d3.scaleQuantize()
+    .domain([0, 100])
+    .range(d3.range(6).map(function(i) { return "q" + i + "-9"; }));
+
+var projection = d3.geoAlbersUsa()
+    .scale(1280)
+    .translate([width / 2, height / 2]);
+
+var path = d3.geoPath()
+    .projection(projection);
+
+d3.queue()
+    .defer(d3.json, "js/us.json")
+    .defer(d3.tsv, "tsv/drought.tsv", function(d) { 
+      let value = (d.D0 - d.D1) + 2*(d.D1 - d.D2) + 3*(d.D2 - d.D3) + 4*(d.D3 - d.D4) + 5*d.D4
+      
+      rateById.set(d.FIPS, value);
+      county_names.set(d.FIPS, d.County);
+      county_states.set(d.FIPS, d.State);
+      intensities.set(d.FIPS, [d.D0, d.D1, d.D2, d.D3, d.D4]) })
+
+    .await(ready);
+
+function ready(error, us) {
+
+  if (error) throw error;
+
+  svg.append("g")
+    .attr("class", "counties")
+    .selectAll("path")
+    .data(topojson.feature(us, us.objects.counties).features)
+    .enter().append("path")
+    .attr("class", function(d) { 
+
+        // console.log("county", county_names.get(d.id));
+        // console.log("state", county_states.get(d.id));
+        // console.log("intensities", intensities.get(d.id));
+
+        return quantize(rateById.get(d.id)); })
+    .attr("d", path)
+    .on("mouseover",mouseover1)
+    .on("mouseout",mouseout1);
+
+  svg.append("path")
+      .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
+      .attr("class", "states")
+      .attr("d", path);
+}
+
+function mouseover1(d) {
+
+      d3.select("#info").text(county_names.get(d.id) + ", " + county_states.get(d.id));
+      row = intensities.get(d.id);
+
+      d3.select("#intensity").text("D0:  " + row[0] +" D1: " + row[1] + " D2: " + row[2] + " D3: " + row[3] + " D4: " + row[4]);
+}
+
+function mouseout1(d){
+  d3.select("#info").text("");
+  d3.select("#intensity").text("");
+
+}
+</script>
