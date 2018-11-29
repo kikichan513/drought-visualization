@@ -217,11 +217,6 @@ function ready(error, us) {
     .data(topojson.feature(us, us.objects.counties).features)
     .enter().append("path")
     .attr("class", function(d) { 
-
-        // console.log("county", county_names.get(d.id));
-        // console.log("state", county_states.get(d.id));
-        // console.log("intensities", intensities.get(d.id));
-
         return quantize(rateById.get(d.id)); })
     .attr("d", path)
     .on("mouseover",mouseover1)
@@ -234,6 +229,7 @@ function ready(error, us) {
 }
 
 function mouseover1(d) {
+
 
       d3.select("#info").text(county_names.get(d.id) + ", " + county_states.get(d.id));
       row = intensities.get(d.id);
